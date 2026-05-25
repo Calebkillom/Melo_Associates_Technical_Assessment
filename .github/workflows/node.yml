@@ -1,0 +1,71 @@
+# =============================================
+# CI Pipeline: Interview Question Generator
+# =============================================
+# Runs on every push and pull request to main.
+# Pipeline steps: Install → Lint → Format check → Test → Coverage
+# The job fails if ANY step exits with a non-zero code.
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Node.js CI
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test on two LTS versions to catch compatibility issues early
+        node-version: [18.x, 20.x]
+
+    steps:
+      # ---- 1. Check out the repository ----
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---- 2. Set up the correct Node.js version ----
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # ---- 3. Install dependencies (clean install for CI reproducibility) ----
+      - name: Install dependencies
+        run: npm ci
+
+      # ---- 4. Run ESLint ----
+      # Fails if any lint rule is violated.
+      # `npm run lint` exits with code 1 on any ESLint error.
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      # ---- 5. Check formatting ----
+      # Fails if any file doesn't match Prettier formatting.
+      # Developers must run `npm run format` locally before pushing.
+      - name: Format check (Prettier)
+        run: npm run format:check
+
+      # ---- 6. Run all tests with coverage ----
+      # NODE_ENV=test suppresses logger output in test runs.
+      # GEMINI_API_KEY is set to a dummy value — real calls are mocked.
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: test-key-not-real
+
+      # ---- 7. Upload coverage report as a build artifact ----
+      # Available for download from the GitHub Actions run page.
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'  # Only upload once
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
