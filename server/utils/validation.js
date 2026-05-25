@@ -1,96 +1,43 @@
 'use strict';
 
-/**
- * Unit tests: validation utility
- *
- * Pure function tests — no mocking needed.
- * These run entirely in memory and are extremely fast.
- */
+const JOB_TITLE_MIN_LENGTH = 2;
+const JOB_TITLE_MAX_LENGTH = 100;
 
-const { validateJobTitle } = require('../../utils/validation');
+function validateJobTitle(jobTitle) {
+  if (jobTitle === undefined || jobTitle === null) {
+    return { valid: false, error: 'Job title is required.' };
+  }
 
-describe('validateJobTitle', () => {
-  // ---- Valid inputs ----
-  describe('valid inputs', () => {
-    it('accepts a normal job title', () => {
-      const result = validateJobTitle('Software Engineer');
-      expect(result.valid).toBe(true);
-      expect(result.sanitized).toBe('Software Engineer');
-    });
+  if (typeof jobTitle !== 'string') {
+    return { valid: false, error: 'Job title must be a string.' };
+  }
 
-    it('trims leading and trailing whitespace', () => {
-      const result = validateJobTitle('  Product Manager  ');
-      expect(result.valid).toBe(true);
-      expect(result.sanitized).toBe('Product Manager');
-    });
+  const sanitized = jobTitle.trim();
 
-    it('accepts a 2-character title (minimum length)', () => {
-      const result = validateJobTitle('QA');
-      expect(result.valid).toBe(true);
-    });
+  if (sanitized.length === 0) {
+    return { valid: false, error: 'Job title cannot be empty.' };
+  }
 
-    it('accepts a title at the maximum length boundary', () => {
-      const title = 'A'.repeat(100);
-      const result = validateJobTitle(title);
-      expect(result.valid).toBe(true);
-    });
+  if (sanitized.length < JOB_TITLE_MIN_LENGTH) {
+    return {
+      valid: false,
+      error: `Job title must be at least ${JOB_TITLE_MIN_LENGTH} characters.`,
+    };
+  }
 
-    it('accepts titles with hyphens and parentheses', () => {
-      const result = validateJobTitle('Full-Stack Developer (React)');
-      expect(result.valid).toBe(true);
-      expect(result.sanitized).toBe('Full-Stack Developer (React)');
-    });
-  });
+  if (sanitized.length > JOB_TITLE_MAX_LENGTH) {
+    return {
+      valid: false,
+      error: `Job title must be ${JOB_TITLE_MAX_LENGTH} characters or fewer.`,
+    };
+  }
 
-  // ---- Invalid inputs ----
-  describe('invalid inputs', () => {
-    it('rejects undefined', () => {
-      const result = validateJobTitle(undefined);
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/required/i);
-    });
+  const suspiciousPattern = /[<>{}|\\^`]/;
+  if (suspiciousPattern.test(sanitized)) {
+    return { valid: false, error: 'Job title contains invalid characters.' };
+  }
 
-    it('rejects null', () => {
-      const result = validateJobTitle(null);
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/required/i);
-    });
+  return { valid: true, sanitized };
+}
 
-    it('rejects a non-string value (number)', () => {
-      const result = validateJobTitle(42);
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/string/i);
-    });
-
-    it('rejects an empty string', () => {
-      const result = validateJobTitle('');
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/empty/i);
-    });
-
-    it('rejects a whitespace-only string', () => {
-      const result = validateJobTitle('   ');
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/empty/i);
-    });
-
-    it('rejects a single character (below minimum length)', () => {
-      const result = validateJobTitle('A');
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/at least/i);
-    });
-
-    it('rejects a title exceeding 100 characters', () => {
-      const longTitle = 'A'.repeat(101);
-      const result = validateJobTitle(longTitle);
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/100/);
-    });
-
-    it('rejects titles with HTML-injection characters', () => {
-      const result = validateJobTitle('<script>alert("xss")</script>');
-      expect(result.valid).toBe(false);
-      expect(result.error).toMatch(/invalid characters/i);
-    });
-  });
-});
+module.exports = { validateJobTitle };
