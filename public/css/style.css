@@ -602,7 +602,7 @@ body {
    7. ERROR ALERT
    ---------------------------------------------------------------- */
 .error-alert {
-  display: flex;
+  display: none;
   align-items: flex-start;
   gap: var(--s-3);
   margin-top: var(--s-4);
@@ -611,6 +611,10 @@ body {
   border: 1px solid #F5C4B3;
   border-radius: var(--r-lg);
   animation: shakeIn 0.3s var(--ease-out);
+}
+
+.error-alert:not([hidden]) {
+  display: flex;
 }
 
 @keyframes shakeIn {

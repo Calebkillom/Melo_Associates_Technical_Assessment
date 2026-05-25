@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { config } = require('../config/env');
 const logger = require('../utils/logger');
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_NAME = 'gemini-2.5-flash';
 const EXPECTED_QUESTION_COUNT = 3;
 
 function buildPrompt(jobTitle) {
